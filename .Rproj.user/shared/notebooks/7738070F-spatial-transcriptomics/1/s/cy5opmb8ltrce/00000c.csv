@@ -1,0 +1,7 @@
+"0","barcodes <- colnames(puck@counts) # pixels to be used (a list of barcode names). "
+"0",""
+"0","# This list can be restricted if you want to crop the puck e.g. "
+"0","# puck <- restrict_puck(puck, barcodes) provides a basic plot of the nUMI of each pixel"
+"0","# on the plot:"
+"0","plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), "
+"0","                     title ='plot of nUMI') "

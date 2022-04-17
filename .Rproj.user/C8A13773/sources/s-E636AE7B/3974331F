@@ -1,0 +1,31 @@
+{
+    "id": "3974331F",
+    "path": "~/GitHub/spacexr/vignettes/spatial-transcriptomics.Rmd",
+    "project_path": "vignettes/spatial-transcriptomics.Rmd",
+    "type": "r_markdown",
+    "hash": "1849231096",
+    "contents": "",
+    "dirty": false,
+    "created": 1649842610145.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "224,34",
+        "scrollLine": "0",
+        "rmdVisualMode": "true",
+        "rmdVisualModeLocation": "9962:5465",
+        "rmdVisualWrapConfigured": "true",
+        "docOutlineVisible": "1",
+        "last_setup_crc32": "E636AE7B7550291d"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1650200274,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1650200274745,
+    "read_only": false,
+    "read_only_alternatives": []
+}

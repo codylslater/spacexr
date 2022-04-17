@@ -1,0 +1,27 @@
+{
+    "id": "E402089E",
+    "path": "~/GitHub/spacexr/vignettes/visium_multi.Rmd",
+    "project_path": "vignettes/visium_multi.Rmd",
+    "type": "r_markdown",
+    "hash": "3955802067",
+    "contents": "",
+    "dirty": false,
+    "created": 1650200559387.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "68,55",
+        "scrollLine": "55",
+        "last_setup_crc32": "E636AE7B5e1121e1"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1650201912,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1650201912568,
+    "read_only": false,
+    "read_only_alternatives": []
+}

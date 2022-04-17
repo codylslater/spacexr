@@ -1,0 +1,74 @@
+"0","# make the plots "
+"0","# Plots the confident weights for each cell type as in full_mode (saved as "
+"0","# 'results/cell_type_weights_unthreshold.pdf')"
+"0","plot_weights(cell_type_names, spatialRNA, resultsdir, norm_weights) "
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","null device "
+"1","
+"
+"1","          1 "
+"1","
+"
+"0","# Plots all weights for each cell type as in full_mode. (saved as "
+"0","# 'results/cell_type_weights.pdf')"
+"0","plot_weights_unthreshold(cell_type_names, spatialRNA, resultsdir, norm_weights) "
+"1","null device "
+"1","
+"
+"1","          1 "
+"1","
+"
+"0","# Plots the weights for each cell type as in doublet_mode. (saved as "
+"0","# 'results/cell_type_weights_doublets.pdf')"
+"0","plot_weights_doublet(cell_type_names, spatialRNA, resultsdir, results$weights_doublet, "
+"0","                     results$results_df) "
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","null device "
+"1","
+"
+"1","          1 "
+"1","
+"
+"0","# Plots the number of confident pixels of each cell type in 'full_mode'. (saved as "
+"0","# 'results/cell_type_occur.pdf')"
+"0","plot_cond_occur(cell_type_names, resultsdir, norm_weights, spatialRNA)"

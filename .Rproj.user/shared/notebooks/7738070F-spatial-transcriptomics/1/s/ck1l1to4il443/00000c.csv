@@ -1,0 +1,44 @@
+"0","# Plots all doublets in space for each cell type (saved as "
+"0","# 'results/all_doublets_type.pdf')"
+"0","plot_doublets_type(spatialRNA, doublets, resultsdir, cell_type_names) "
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","NULL
+"
+"1","png "
+"1","
+"
+"1","  2 "
+"1","
+"
+"0","# a table of frequency of doublet pairs "
+"0","doub_occur <- table(doublets$second_type, doublets$first_type) "
+"0","# Plots a stacked bar plot of doublet ocurrences (saved as "
+"0","# 'results/doublet_stacked_bar.pdf')"
+"0",""
+"0","plot_doub_occur_stack(doub_occur, resultsdir, cell_type_names) "
+"0",""

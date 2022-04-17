@@ -1,0 +1,28 @@
+{
+    "id": "6B8BF2F7",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1650201552024.0,
+    "source_on_save": false,
+    "relative_order": 8,
+    "properties": {
+        "id": "d9f0b87ec8de417c81115507ec4e92cb",
+        "name": "puck",
+        "title": "puck",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 29555323532673116,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1650201552024,
+    "read_only": false,
+    "read_only_alternatives": []
+}

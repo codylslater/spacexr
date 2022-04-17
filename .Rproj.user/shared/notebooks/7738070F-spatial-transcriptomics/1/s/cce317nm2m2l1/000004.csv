@@ -1,0 +1,150 @@
+"0","myRCTD <- create.RCTD(puck, reference, max_cores = 64)"
+"2","Begin: process_cell_type_info
+"
+"2","process_cell_type_info: number of cells in reference: 475
+"
+"2","process_cell_type_info: number of genes in reference: 384
+"
+"1","
+"
+"1"," 1 "
+"1"," 2 "
+"1"," 3 "
+"1"," 4 "
+"1"," 5 "
+"1"," 6 "
+"1"," 7 "
+"1"," 8 "
+"1"," 9 "
+"1","10 "
+"1","11 "
+"1","12 "
+"1","13 "
+"1","14 "
+"1","15 "
+"1","16 "
+"1","17 "
+"1","18 "
+"1","19 "
+"1","
+"
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","25 "
+"1","
+"
+"2","End: process_cell_type_info
+"
+"2","create.RCTD: getting regression differentially expressed genes: 
+"
+"2","get_de_genes: 1 found DE genes: 35
+"
+"2","get_de_genes: 2 found DE genes: 38
+"
+"2","get_de_genes: 3 found DE genes: 57
+"
+"2","get_de_genes: 4 found DE genes: 18
+"
+"2","get_de_genes: 5 found DE genes: 26
+"
+"2","get_de_genes: 6 found DE genes: 16
+"
+"2","get_de_genes: 7 found DE genes: 20
+"
+"2","get_de_genes: 8 found DE genes: 46
+"
+"2","get_de_genes: 9 found DE genes: 59
+"
+"2","get_de_genes: 10 found DE genes: 51
+"
+"2","get_de_genes: 11 found DE genes: 44
+"
+"2","get_de_genes: 12 found DE genes: 19
+"
+"2","get_de_genes: 13 found DE genes: 27
+"
+"2","get_de_genes: 14 found DE genes: 55
+"
+"2","get_de_genes: 15 found DE genes: 51
+"
+"2","get_de_genes: 16 found DE genes: 57
+"
+"2","get_de_genes: 17 found DE genes: 50
+"
+"2","get_de_genes: 18 found DE genes: 75
+"
+"2","get_de_genes: 19 found DE genes: 56
+"
+"2","get_de_genes: total DE genes: 313
+"
+"2","create.RCTD: getting platform effect normalization differentially expressed genes: 
+"
+"2","get_de_genes: 1 found DE genes: 58
+"
+"2","get_de_genes: 2 found DE genes: 61
+"
+"2","get_de_genes: 3 found DE genes: 85
+"
+"2","get_de_genes: 4 found DE genes: 33
+"
+"2","get_de_genes: 5 found DE genes: 35
+"
+"2","get_de_genes: 6 found DE genes: 29
+"
+"2","get_de_genes: 7 found DE genes: 28
+"
+"2","get_de_genes: 8 found DE genes: 89
+"
+"2","get_de_genes: 9 found DE genes: 82
+"
+"2","get_de_genes: 10 found DE genes: 78
+"
+"2","get_de_genes: 11 found DE genes: 79
+"
+"2","get_de_genes: 12 found DE genes: 26
+"
+"2","get_de_genes: 13 found DE genes: 38
+"
+"2","get_de_genes: 14 found DE genes: 87
+"
+"2","get_de_genes: 15 found DE genes: 79
+"
+"2","get_de_genes: 16 found DE genes: 64
+"
+"2","get_de_genes: 17 found DE genes: 59
+"
+"2","get_de_genes: 18 found DE genes: 93
+"
+"2","get_de_genes: 19 found DE genes: 89
+"
+"2","get_de_genes: total DE genes: 340
+"
+"0","myRCTD <- run.RCTD(myRCTD, doublet_mode = 'doublet')"
+"2","fitBulk: decomposing bulk
+"
+"2","chooseSigma: using initial Q_mat with sigma =  1
+"
+"2","Likelihood value: 1970.42788150886
+"
+"2","Sigma value:  0.84
+"
+"2","Likelihood value: 1964.49817810465
+"
+"2","Sigma value:  0.84
+"

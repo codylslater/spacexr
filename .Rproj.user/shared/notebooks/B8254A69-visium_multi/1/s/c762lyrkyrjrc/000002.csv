@@ -1,0 +1,221 @@
+"0","### Load in/preprocess your data, this might vary based on your file type"
+"0","if(!file.exists(file.path(savedir,'myRCTD_visium_multi.rds'))) {"
+"0","  counts <- as.data.frame(readr::read_csv(file.path(datadir,""counts.csv""))) # load in counts matrix"
+"0","  coords <- read.csv(file.path(datadir,""coords.csv""))"
+"0","  rownames(counts) <- counts[,1]; counts[,1] <- NULL # Move first column to rownames"
+"0","  rownames(coords) <- coords[,1]; coords[,1] <- NULL # Move first column to rownames"
+"0","  nUMI <- colSums(counts) # In this case, total counts per pixel is nUMI"
+"0","  puck <- SpatialRNA(coords, counts, nUMI)"
+"0","  barcodes <- colnames(puck@counts) # pixels to be used (a list of barcode names). "
+"0","  plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), "
+"0","                       title ='plot of nUMI') "
+"0","  refdir <- system.file(""extdata"",'Reference/Visium_Ref',package = 'spacexr') # directory for the reference"
+"0","  counts <- read.csv(file.path(refdir,""counts.csv"")) # load in cell types"
+"0","  rownames(counts) <- counts[,1]; counts[,1] <- NULL # Move first column to rownames"
+"0","  cell_types <- read.csv(file.path(refdir,""cell_types.csv"")) # load in cell types"
+"0","  cell_types <- setNames(cell_types[[2]], cell_types[[1]])"
+"0","  cell_types <- as.factor(cell_types) # convert to factor data type"
+"0","  nUMI <- read.csv(file.path(refdir,""nUMI.csv"")) # load in cell types"
+"0","  nUMI <- setNames(nUMI[[2]], nUMI[[1]])"
+"0","  reference <- Reference(counts, cell_types, nUMI)"
+"0","  myRCTD <- create.RCTD(puck, reference, max_cores = 2)"
+"0","  myRCTD <- run.RCTD(myRCTD, doublet_mode = 'multi')"
+"0","  saveRDS(myRCTD,file.path(savedir,'myRCTD_visium_multi.rds'))"
+"0","}"
+"1","[38;5;255mNew names:
+[36m*[38;5;255m [38;5;251m[48;5;235m``[49m[38;5;255m -> [38;5;251m[48;5;235m`...1`[49m[38;5;255m[39m
+"
+"1","[1mRows: [22m[34m276[39m [1mColumns: [22m[34m314[39m
+"
+"1","[36m--[39m [1mColumn specification[22m [36m-----------------------------------------------------------------------------------------------------------------------------------------------------------------[39m
+[1mDelimiter:[22m "",""
+[31mchr[39m   (1): ...1
+[32mdbl[39m (313): AAAGGGATGTAGCAAG-1, AAAGGGCAGCTTGAAT-1, AACAACTGGTAGTTGC-1, AACCCAGAGACGGAGA-1, AACCGAGCTTGGTCAT-1, AACGATAGAAGGGCCG-1, AACGCGGTCTCCAGCC-1, AACGTCAGACTAGTGG-1, AACTGGGTCC...
+"
+"1","
+[36mi[39m Use [38;5;251m[48;5;235m[38;5;251m[48;5;235m`spec()`[48;5;235m[38;5;251m[49m[39m to retrieve the full column specification for this data.
+[36mi[39m Specify the column types or set [38;5;251m[48;5;235m[38;5;251m[48;5;235m`show_col_types = FALSE`[48;5;235m[38;5;251m[49m[39m to quiet this message.
+"
+"2","Warning in Reference(counts, cell_types, nUMI) :"
+"2","
+ "
+"2"," Reference: nUMI does not match colSums of counts. If this is unintended, please correct this discrepancy. If this is intended, there is no problem.
+"
+"2","Begin: process_cell_type_info
+"
+"2","process_cell_type_info: number of cells in reference: 510
+"
+"2","process_cell_type_info: number of genes in reference: 307
+"
+"1","
+"
+"1","            Astrocyte "
+"1","                  CA1 "
+"1","                  CA3 "
+"1","        Cajal_Retzius "
+"1","              Choroid "
+"1","               Denate "
+"1","    Endothelial_Stalk "
+"1","      Endothelial_Tip "
+"1","
+"
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","
+"
+"1","          Entorihinal "
+"1","            Ependymal "
+"1","          Interneuron "
+"1","Microglia_Macrophages "
+"1","                Mural "
+"1","         Neurogenesis "
+"1","       Neuron.Slc17a6 "
+"1","      Oligodendrocyte "
+"1","
+"
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","                   30 "
+"1","
+"
+"1","       Polydendrocyte "
+"1","
+"
+"1","                   30 "
+"1","
+"
+"2","End: process_cell_type_info
+"
+"2","create.RCTD: getting regression differentially expressed genes: 
+"
+"2","get_de_genes: Astrocyte found DE genes: 21
+"
+"2","get_de_genes: CA1 found DE genes: 15
+"
+"2","get_de_genes: CA3 found DE genes: 24
+"
+"2","get_de_genes: Cajal_Retzius found DE genes: 15
+"
+"2","get_de_genes: Choroid found DE genes: 12
+"
+"2","get_de_genes: Denate found DE genes: 14
+"
+"2","get_de_genes: Endothelial_Stalk found DE genes: 7
+"
+"2","get_de_genes: Endothelial_Tip found DE genes: 6
+"
+"2","get_de_genes: Entorihinal found DE genes: 16
+"
+"2","get_de_genes: Ependymal found DE genes: 11
+"
+"2","get_de_genes: Interneuron found DE genes: 7
+"
+"2","get_de_genes: Microglia_Macrophages found DE genes: 6
+"
+"2","get_de_genes: Mural found DE genes: 8
+"
+"2","get_de_genes: Neurogenesis found DE genes: 18
+"
+"2","get_de_genes: Neuron.Slc17a6 found DE genes: 13
+"
+"2","get_de_genes: Oligodendrocyte found DE genes: 11
+"
+"2","get_de_genes: Polydendrocyte found DE genes: 4
+"
+"2","get_de_genes: total DE genes: 102
+"
+"2","create.RCTD: getting platform effect normalization differentially expressed genes: 
+"
+"2","get_de_genes: Astrocyte found DE genes: 22
+"
+"2","get_de_genes: CA1 found DE genes: 28
+"
+"2","get_de_genes: CA3 found DE genes: 32
+"
+"2","get_de_genes: Cajal_Retzius found DE genes: 36
+"
+"2","get_de_genes: Choroid found DE genes: 22
+"
+"2","get_de_genes: Denate found DE genes: 28
+"
+"2","get_de_genes: Endothelial_Stalk found DE genes: 16
+"
+"2","get_de_genes: Endothelial_Tip found DE genes: 10
+"
+"2","get_de_genes: Entorihinal found DE genes: 29
+"
+"2","get_de_genes: Ependymal found DE genes: 14
+"
+"2","get_de_genes: Interneuron found DE genes: 13
+"
+"2","get_de_genes: Microglia_Macrophages found DE genes: 9
+"
+"2","get_de_genes: Mural found DE genes: 12
+"
+"2","get_de_genes: Neurogenesis found DE genes: 32
+"
+"2","get_de_genes: Neuron.Slc17a6 found DE genes: 26
+"
+"2","get_de_genes: Oligodendrocyte found DE genes: 16
+"
+"2","get_de_genes: Polydendrocyte found DE genes: 8
+"
+"2","get_de_genes: total DE genes: 122
+"
+"2","fitBulk: decomposing bulk
+"
+"2","Warning in for (pkg in package) { :"
+"2","
+ "
+"2"," closing unused connection 4 (<-BetaDroid:11120)
+"
+"2","Warning in for (pkg in package) { :"
+"2","
+ "
+"2"," closing unused connection 3 (<-BetaDroid:11120)
+"
+"2","chooseSigma: using initial Q_mat with sigma =  1
+"
+"2","Likelihood value: 123496.681380086
+"
+"2","Sigma value:  0.84
+"
+"2","Likelihood value: 119268.308954081
+"
+"2","Sigma value:  0.69
+"
+"2","Likelihood value: 114932.720250622
+"
+"2","Sigma value:  0.61
+"
+"2","Likelihood value: 112490.291409321
+"
+"2","Sigma value:  0.53
+"
+"2","Likelihood value: 109993.152353795
+"
+"2","Sigma value:  0.45
+"
+"2","Likelihood value: 107505.825401598
+"
+"2","Sigma value:  0.37
+"
+"2","Likelihood value: 105150.81136131
+"
+"2","Sigma value:  0.29
+"
+"2","Likelihood value: 103178.818294388
+"
+"2","Sigma value:  0.21
+"

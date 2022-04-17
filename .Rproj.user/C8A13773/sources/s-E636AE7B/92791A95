@@ -1,0 +1,28 @@
+{
+    "id": "92791A95",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1650199385665.0,
+    "source_on_save": false,
+    "relative_order": 6,
+    "properties": {
+        "id": "1dbeb6dc3c234c0baded65e0a63b70ef",
+        "name": "myRCTD",
+        "title": "myRCTD",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 3611979549087384404,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1650199385665,
+    "read_only": false,
+    "read_only_alternatives": []
+}
