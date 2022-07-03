@@ -9,13 +9,13 @@
 #' @param explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable
 #' are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurrences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
-#' @param cell_type_threshold (default 125) min occurrence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param cell_type_threshold (default 125) min occurrence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
-#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.
+#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
 #' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occurring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
@@ -23,6 +23,9 @@
 #' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
 #' @param normalize_expr (default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.
 #' @param logs (default FALSE) if TRUE, writes progress to logs/de_logs.txt
+#' @param test_error (default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+#' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
+#' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
@@ -31,15 +34,22 @@
 run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell_type_threshold = 125,
                           gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01,
-                          test_genes_sig = T, normalize_expr = F, logs=F) {
+                          test_genes_sig = T, normalize_expr = F, logs=F, log_fc_thresh = 0.4, test_error = F) {
   X2 <- build.designmatrix.single(myRCTD, explanatory.variable)
   barcodes <- rownames(X2)
+  explanatory.variable <- explanatory.variable[barcodes]
+  medv <- 0.5
+  region_thresh <- cell_type_threshold / 2
+  r1 <- barcodes[explanatory.variable < medv]
+  cell_type_filter <- aggregate_cell_types(myRCTD, r1, doublet_mode = doublet_mode) >= region_thresh
+  r2 <- barcodes[explanatory.variable > medv]
+  cell_type_filter <- cell_type_filter & (aggregate_cell_types(myRCTD, r2, doublet_mode = doublet_mode) >= region_thresh)
   return(run.CSIDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold, cell_type_threshold = cell_type_threshold,
                        doublet_mode = doublet_mode, test_mode = 'individual', params_to_test = 2,
                        weight_threshold = weight_threshold, sigma_gene = sigma_gene, test_genes_sig = test_genes_sig,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
                        cell_types_present = cell_types_present, fdr = fdr, normalize_expr = normalize_expr,
-                   logs=logs))
+                   logs=logs, cell_type_filter = cell_type_filter, log_fc_thresh = log_fc_thresh, test_error = test_error))
 }
 
 #' Runs CSIDE on a \code{\linkS4class{RCTD}} object to detect nonparametric smooth gene expression patterns
@@ -52,17 +62,19 @@ run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
 #' @param df (default 15) the degrees of freedom, or number of basis functions to be used in the model.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
-#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.
+#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
 #' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
+#' @param test_error (default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+#' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
 #' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
@@ -74,15 +86,27 @@ run.CSIDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NU
                             cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                             weight_threshold = NULL, sigma_gene = T,
                             PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01, test_genes_sig = T,
-                            logs=F) {
+                            logs=F, test_error = F) {
   X2 <- build.designmatrix.nonparam(myRCTD, barcodes = barcodes, df = df)
+  region_thresh <- cell_type_threshold / 4
   barcodes <- rownames(X2)
+  coords <- myRCTD@spatialRNA@coords[barcodes,]
+  medx <- median(coords$x); medy <- median(coords$y)
+  r1 <- barcodes[coords$x < medx & coords$y < medy]
+  cell_type_filter <- aggregate_cell_types(myRCTD, r1, doublet_mode = doublet_mode) >= region_thresh
+  r2 <- barcodes[coords$x < medx & coords$y > medy]
+  cell_type_filter <- cell_type_filter & (aggregate_cell_types(myRCTD, r2, doublet_mode = doublet_mode) >= region_thresh)
+  r3 <- barcodes[coords$x > medx & coords$y > medy]
+  cell_type_filter <- cell_type_filter & (aggregate_cell_types(myRCTD, r3, doublet_mode = doublet_mode) >= region_thresh)
+  r4 <- barcodes[coords$x > medx & coords$y > medy]
+  cell_type_filter <- cell_type_filter & (aggregate_cell_types(myRCTD, r4, doublet_mode = doublet_mode) >= region_thresh)
+  cell_type_count <- aggregate_cell_types(myRCTD, barcodes, doublet_mode = doublet_mode)
   return(run.CSIDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = 'individual', cell_type_threshold = cell_type_threshold,
                        weight_threshold = weight_threshold, sigma_gene = sigma_gene,test_genes_sig = test_genes_sig,
-                       PRECISION.THRESHOLD = PRECISION.THRESHOLD,
+                       PRECISION.THRESHOLD = PRECISION.THRESHOLD, test_error = test_error,
                        cell_types_present = cell_types_present, params_to_test = 2:df, fdr = fdr, normalize_expr = F,
-                   logs=logs))
+                   logs=logs, cell_type_filter = cell_type_filter))
 }
 
 #' Runs CSIDE on a \code{\linkS4class{RCTD}} object for DE across multiple discrete regions
@@ -96,19 +120,22 @@ run.CSIDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NU
 #' @param region_list a list of \code{character} vectors, where each vector contains pixel names, or barcodes, for a single region. These pixel names
 #' should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
-#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.
+#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
 #' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
 #' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
 #' @param logs (default FALSE) if TRUE, writes progress to logs/de_logs.txt
+#' @param test_error (default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+#' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
+#'@param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
@@ -118,7 +145,7 @@ run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
                            cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                           weight_threshold = NULL, sigma_gene = T,
                            PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = 0.01, test_genes_sig = T,
-                          logs=F) {
+                          logs=F, log_fc_thresh = log_fc_thresh, test_error = F) {
   X2 <- build.designmatrix.regions(myRCTD, region_list)
   barcodes <- rownames(X2)
   return(run.CSIDE(myRCTD, X2, barcodes, cell_types, cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold,
@@ -126,7 +153,7 @@ run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
                        weight_threshold = weight_threshold, sigma_gene = sigma_gene, params_to_test = 1:dim(X2)[2],
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,test_genes_sig = test_genes_sig,
                        cell_types_present = cell_types_present, fdr = fdr, normalize_expr = F,
-                   logs=logs))
+                   logs=logs, log_fc_thresh = log_fc_thresh, test_error = test_error))
 }
 
 #' Runs cell type specific CSIDE on a \code{\linkS4class{RCTD}} object with a general design matrix
@@ -142,17 +169,17 @@ run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
 #' explaining differential expression and need to be linearly independent.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param cell_type_specific: (default TRUE for all covariates). A logical vector of length the number of covariates
 #' indicating whether each covariate's DE parameters should be cell type-specific or shared across all cell types.
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix.
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
-#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.
+#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
 #' @param test_mode (default 'individual') if 'individual', tests for DE individually for each parameter. If 'categorical', then tests for differences
 #' across multiple categorical parameters
 #' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
@@ -163,6 +190,9 @@ run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
 #' Setting normalize_expr = TRUE is only valid for testing single parameters with test_mode = 'individual'.
 #' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
 #' @param logs (default FALSE) if TRUE, writes progress to logs/de_logs.txt
+#' @param test_error (default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+#' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
+#' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
@@ -172,7 +202,8 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, ce
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, cell_type_specific = NULL,
-                      params_to_test = NULL, normalize_expr = F, logs=F) {
+                      params_to_test = NULL, normalize_expr = F, logs=F, log_fc_thresh = 0.4,
+                      cell_type_filter = NULL, test_error = F) {
   X <- check_designmatrix(X, 'run.CSIDE', require_2d = TRUE)
   if(is.null(cell_type_specific))
     cell_type_specific <- !logical(dim(X)[2])
@@ -187,7 +218,8 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, ce
                        doublet_mode = doublet_mode, test_mode = test_mode, weight_threshold = weight_threshold,
                        sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, params_to_test = params_to_test,
                        cell_types_present = cell_types_present, test_genes_sig = test_genes_sig,
-                       fdr = fdr, normalize_expr = normalize_expr, logs=logs))
+                       fdr = fdr, normalize_expr = normalize_expr, logs=logs,
+                       cell_type_filter = cell_type_filter, log_fc_thresh = log_fc_thresh, test_error = test_error))
 }
 
 #' Runs CSIDE on a \code{\linkS4class{RCTD}} object with a general design matrix
@@ -207,15 +239,15 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, ce
 #' explaining differential expression and need to be linearly independent.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix X2.
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
-#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.
+#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
 #' @param test_mode (default 'individual') if 'individual', tests for DE individually for each parameter. If 'categorical', then tests for differences
 #' across multiple categorical parameters
 #' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
@@ -226,6 +258,9 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, ce
 #' @param normalize_expr (default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.
 #' Setting normalize_expr = TRUE is only valid for testing single parameters with test_mode = 'individual'.
 #' @param logs (default FALSE) if TRUE, writes progress to logs/de_logs.txt
+#' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
+#' @param test_error (default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+#' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE, whereas
@@ -236,12 +271,20 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_thresho
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, params_to_test = NULL, normalize_expr = F,
-                          logs=F) {
+                          logs=F, cell_type_filter = NULL, log_fc_thresh = 0.4, test_error = FALSE) {
   if(doublet_mode && myRCTD@config$RCTDmode != 'doublet')
     stop('run.CSIDE.general: attempted to run CSIDE in doublet mode, but RCTD was not run in doublet mode. Please run CSIDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
   if(!any("cell_types_assigned" %in% names(myRCTD@internal_vars)) || !myRCTD@internal_vars$cell_types_assigned)
     stop('run.CSIDE.general: cannot run CSIDE unless cell types have been assigned. If cell types have been assigned, you may run "myRCTD <- set_cell_types_assigned(myRCTD)".')
   cell_types <- choose_cell_types(myRCTD, barcodes, doublet_mode, cell_type_threshold, cell_types)
+  if(!is.null(cell_type_filter)) {
+    ct_remove <- setdiff(cell_types, names(which(cell_type_filter)))
+    if(length(ct_remove) > 0)
+      message(paste0('Warning: run.CSIDE.general: removing the following cell types due to insufficient counts per region. Consider lowering cell_type_threshold or proceeding with removed cell types. Cell types: ',
+                     paste(paste0(ct_remove, ', ', collapse = ""))))
+    cell_types <- intersect(cell_types, names(which(cell_type_filter)))
+  }
+  message(paste0("run.CSIDE.general: running CSIDE with cell types ",paste(cell_types, collapse = ', ')))
   X1 <- check_designmatrix(X1, 'run.CSIDE.general')
   X2 <- check_designmatrix(X2, 'run.CSIDE.general', require_2d = TRUE)
   if(!(test_mode %in% c('individual', 'categorical')))
@@ -253,7 +296,8 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_thresho
       params_to_test <- 1:dim(X2)[2]
   if(normalize_expr && (test_mode != 'individual' || length(params_to_test) > 1))
     stop('run.CSIDE.general: Setting normalize_expr = TRUE is only valid for testing single parameters with test_mode = individual')
-  message(paste0("run.CSIDE.general: configure params_to_test = ",params_to_test))
+  message(paste0("run.CSIDE.general: configure params_to_test = ",
+                 paste(paste0(params_to_test, ', ', collapse = ""))))
   if(any(!(params_to_test %in% 1:dim(X2)[2])))
     stop(c('run.CSIDE.general: params_to_test must be a vector of integers from 1 to dim(X2)[2] = ', dim(X2)[2],
            'please make sure that tested parameters are in the required range.'))
@@ -272,11 +316,13 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_thresho
     thresh = 0.999
   } else {
     my_beta <- as.matrix(sweep(myRCTD@results$weights, 1, rowSums(myRCTD@results$weights), '/'))
-    thresh = 0.95
+    thresh = 0.8
   }
   if(!is.null(weight_threshold))
     thresh = weight_threshold
   res <- filter_barcodes_cell_types(barcodes, cell_types, my_beta, thresh = thresh)
+  if(test_error)
+    return(myRCTD)
   barcodes <- res$barcodes; my_beta <- res$my_beta
   set_likelihood_vars(myRCTD@internal_vars$Q_mat, myRCTD@internal_vars$X_vals)
   if(sigma_gene)
@@ -293,7 +339,7 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_thresho
   if(test_genes_sig) {
     both_gene_list <- get_sig_genes(puck, myRCTD, gene_list_tot, cell_types, my_beta, barcodes, nUMI,
                             gene_fits, cell_types_present, X2, test_mode, fdr = fdr,
-                            params_to_test = params_to_test, normalize_expr = normalize_expr)
+                            params_to_test = params_to_test, normalize_expr = normalize_expr, log_fc_thresh = log_fc_thresh)
     sig_gene_list <- both_gene_list$sig_gene_list; all_gene_list <- both_gene_list$all_gene_list
   } else {
     sig_gene_list <- NULL
@@ -320,7 +366,7 @@ get_sig_genes <- function(puck, myRCTD, gene_list_tot, cell_types, my_beta, barc
                                          params_to_test = params_to_test, fdr = fdr, p_thresh = p_thresh,
                                          log_fc_thresh = log_fc_thresh, normalize_expr = normalize_expr)
     else if(test_mode == 'categorical') {
-      sig_genes <- find_sig_genes_categorical(cell_type, cell_types, gene_fits, gene_list_type, X2,
+      both_genes <- find_sig_genes_categorical(cell_type, cell_types, gene_fits, gene_list_type, X2,
                                         p_thresh = p_thresh, log_fc_thresh = log_fc_thresh,
                                         params_to_test = params_to_test)
     }
@@ -356,6 +402,9 @@ test_genes_sig_post <- function(myRCTD, params_to_test = NULL, fdr = .01, p_thre
 
 find_sig_genes_categorical <- function(cell_type, cell_types, gene_fits, gene_list_type, X2, fdr = 0.01,
                                 p_thresh = 1, log_fc_thresh = 0.4, params_to_test = NULL) {
+  if(length(gene_list_type) == 0)
+    stop(paste0('find_sig_genes_categorical: cell type ', cell_type,
+                ' has not converged on any genes. Consider removing this cell type from the model using the cell_types option.'))
   if(is.null(params_to_test))
     params_to_test <- 1:dim(X2)[2]
   n_regions <- length(params_to_test); n_cell_types <- length(cell_types)
@@ -425,6 +474,9 @@ find_sig_genes_categorical <- function(cell_type, cell_types, gene_fits, gene_li
 
 find_sig_genes_individual <- function(cell_type, cell_types, gene_fits, gene_list_type, X2, params_to_test = 2, fdr = 0.01, p_thresh = 1,
                                       log_fc_thresh = 0.4, normalize_expr = F) {
+  if(length(gene_list_type) == 0)
+    stop(paste0('find_sig_genes_individual: cell type ', cell_type,
+                ' has not converged on any genes. Consider removing this cell type from the model using the cell_types option.'))
   ct_ind <- which(cell_types == cell_type)
   I_ind = dim(X2)[2]*(ct_ind - 1) + params_to_test
   if(normalize_expr) {
@@ -496,7 +548,10 @@ find_sig_genes_individual <- function(cell_type, cell_types, gene_fits, gene_lis
 
 get_de_gene_fits <- function(X1,X2,my_beta, nUMI, gene_list, cell_types, puck, barcodes, sigma_init, test_mode,
                              numCores = 4, sigma_gene = T, PRECISION.THRESHOLD = 0.01, params_to_test = 2, logs=F) {
-  results_list <- fit_de_genes(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_init, test_mode, numCores = numCores, sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD)
+  results_list <- fit_de_genes(X1,X2,my_beta, nUMI, gene_list, puck, barcodes,
+                               sigma_init, test_mode, numCores = numCores,
+                               sigma_gene = sigma_gene,
+                               PRECISION.THRESHOLD = PRECISION.THRESHOLD, logs = logs)
   N_genes <- length(results_list)
   intercept_val <- matrix(0,nrow = N_genes, ncol = length(cell_types))
   mean_val <- matrix(0,nrow = N_genes, ncol = length(cell_types))

@@ -18,7 +18,10 @@ run.CSIDE.replicates(
   fdr = 0.01,
   population_de = T,
   replicate_index = NULL,
-  normalize_expr = F
+  normalize_expr = F,
+  de_mode = "single",
+  df = 15,
+  barcodes = NULL
 )
 }
 \arguments{
@@ -28,9 +31,9 @@ run.CSIDE.replicates(
 Names of the vectors are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.}
 
 \item{cell_types}{the cell types used for CSIDE. Each cell type must occur
-at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}}
+at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}}
 
-\item{cell_type_threshold}{(default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}}
+\item{cell_type_threshold}{(default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}}
 
 \item{gene_threshold}{(default 5e-5) minimum average normalized expression required for selecting genes}
 
@@ -53,6 +56,12 @@ to consider for gene expression contamination during the step filtering out mark
 \item{replicate_index}{(default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for CSIDE}
 
 \item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.}
+
+\item{de_mode}{(default 'single') if 'single', calls \code{\link{run.CSIDE.single}}. If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}}
+
+\item{df}{(default 15) for de_mode = nonparam, the degrees of freedom, or number of basis functions to be used in the model.}
+
+\item{barcodes}{for de_mode = nonparam, the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.}
 }
 \value{
 an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE algorithm. See \code{\linkS4class{RCTD.replicates}}

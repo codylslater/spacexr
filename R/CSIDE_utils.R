@@ -142,8 +142,8 @@ aggregate_cell_types <- function(myRCTD, barcodes, doublet_mode = T) {
 #' @param RCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when counting cell typel\.
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
 #' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.
@@ -215,7 +215,6 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
   if(length(cell_types) == 1) {
     stop('choose_cell_types: length(cell_types) is 1. This is currently not supported. Please consider adding another cell type or contact the developers to have us add in this capability.')
   }
-  message(paste0("choose_cell_types: running CSIDE with cell types ",paste(cell_types, collapse = ', ')))
   return(cell_types)
 }
 
@@ -247,10 +246,10 @@ get_spline_matrix <- function(puck, df = 15) {
 check_converged_vec <- function(X1,X2,my_beta, itera, n.iter, error_vec, precision, PRECISION.THRESHOLD) {
   cell_type_ind <- get_cell_type_ind(X1,X2, dim(my_beta)[2])
   converged_vec <- (1:dim(my_beta)[2]) == 0
-  if(itera < n.iter) {
-    converged_vec <- !converged_vec
-    converged_vec[unique(cell_type_ind[precision > PRECISION.THRESHOLD])] <- FALSE
-  }
+  #if(itera < n.iter) {
+  converged_vec <- !converged_vec
+  converged_vec[unique(cell_type_ind[precision > PRECISION.THRESHOLD])] <- FALSE
+  #}
   converged_vec <- converged_vec & (!error_vec)
   names(converged_vec) <- colnames(my_beta)
   return(converged_vec)
@@ -263,7 +262,7 @@ check_converged_vec <- function(X1,X2,my_beta, itera, n.iter, error_vec, precisi
 #'
 #' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param cell_type the cell type (character) for which to compute density.
-#' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the explanatory variable.
+#' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} for which to evaluate the explanatory variable. These would be the pixels used in the C-SIDE model.
 #' @param radius (default 50) the radius of the exponential filter. Approximately, the distance considered to be a
 #' relevant interaction.
 #' @return explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable
@@ -341,7 +340,7 @@ exvar.celltocell.interactions <- function(myRCTD, barcodes, cell_type, radius = 
 #' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param points a N by 2 matrix containing the locations of the points to be used for computing density. The first column should be the x
 #' coordinates while the second column should be the y coordinate.
-#' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the explanatory variable.
+#' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} for which to evaluate the explanatory variable. These would be the pixels used in the C-SIDE model.
 #' @param radius (default 50) the radius of the exponential filter. Approximately, the distance considered to be a
 #' relevant interaction.
 #' @return explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable

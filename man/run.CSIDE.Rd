@@ -22,7 +22,8 @@ run.CSIDE(
   cell_type_specific = NULL,
   params_to_test = NULL,
   normalize_expr = F,
-  logs = F
+  logs = F,
+  cell_type_filter = NULL
 )
 }
 \arguments{
@@ -35,11 +36,11 @@ explaining differential expression and need to be linearly independent.}
 \item{barcodes}{the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.}
 
 \item{cell_types}{the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}}
+at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}}
 
 \item{gene_threshold}{(default 5e-5) minimum average normalized expression required for selecting genes}
 
-\item{cell_type_threshold}{(default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}}
+\item{cell_type_threshold}{(default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}}
 
 \item{doublet_mode}{(default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights}
 
@@ -47,7 +48,7 @@ at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
 across multiple categorical parameters}
 
 \item{weight_threshold}{(default NULL) the threshold of total normalized weights across all cell types
-in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.}
+in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.}
 
 \item{sigma_gene}{(default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.}
 
