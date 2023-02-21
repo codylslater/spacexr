@@ -13,12 +13,15 @@ run.CSIDE.single(
   doublet_mode = T,
   weight_threshold = NULL,
   sigma_gene = T,
-  PRECISION.THRESHOLD = 0.01,
+  PRECISION.THRESHOLD = 0.05,
   cell_types_present = NULL,
   fdr = 0.01,
   test_genes_sig = T,
   normalize_expr = F,
-  logs = F
+  logs = F,
+  log_fc_thresh = 0.4,
+  test_error = F,
+  fdr_method = "BH"
 )
 }
 \arguments{
@@ -41,7 +44,7 @@ in \code{cell_types} per pixel to be included in the model. Default 0.99 for dou
 
 \item{sigma_gene}{(default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.}
 
-\item{PRECISION.THRESHOLD}{(default 0.01) for checking for convergence, the maximum parameter change per algorithm step}
+\item{PRECISION.THRESHOLD}{(default 0.05) for checking for convergence, the maximum parameter change per algorithm step}
 
 \item{cell_types_present}{cell types (a superset of `cell_types`) to be considered as occurring often enough
 to consider for gene expression contamination during the step filtering out marker genes of other cell types.}
@@ -53,6 +56,13 @@ to consider for gene expression contamination during the step filtering out mark
 \item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.}
 
 \item{logs}{(default FALSE) if TRUE, writes progress to logs/de_logs.txt}
+
+\item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
+
+\item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
+
+\item{fdr_method}{(default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},

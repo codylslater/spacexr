@@ -39,7 +39,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Generalized Linear Admixture Models for Differential Expression, or CSIDE, is part of the spacexr R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use CSIDE to test for differential expression in a toy cerebellum Slide-seq dataset. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression across a random explanatory variable.
+Cell type-Specific Inference of Differential Expression, or CSIDE, is part of the spacexr R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use CSIDE to test for differential expression in a toy cerebellum Slide-seq dataset. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression across a random explanatory variable.
 
 ## Data Preprocessing and running RCTD
 
@@ -97,7 +97,7 @@ plot_puck_continuous(myRCTD@spatialRNA, names(explanatory.variable), explanatory
 
 ## Running CSIDE
 
-After creating the explanatory variable, we are now ready to run CSIDE using the `run.CSIDE.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+After creating the explanatory variable, we are now ready to run CSIDE using the `run.CSIDE.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 3.
 
 **Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the CSIDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), and `fdr` (default 0.01). Please see `?run.CSIDE.single` for more information on these parameters. 
 
@@ -105,14 +105,14 @@ After creating the explanatory variable, we are now ready to run CSIDE using the
 #de
 myRCTD@config$max_cores <- 2
 myRCTD <- run.CSIDE.single(myRCTD, explanatory.variable, gene_threshold = .01, 
-                        cell_type_threshold = 10, fdr = 0.25) 
+                        cell_type_threshold = 3, fdr = 0.25) 
 
 saveRDS(myRCTD,file.path(savedir,'myRCTDde.rds'))
 ```
 
 ## CSIDE results
 
-After running CSIDE, it is time to examine CSIDE results. For each cell type, a results dataframe for significant genes is stored in `myRCTD@de_results$sig_gene_list`. In particular, notice the columns `Z_score` (Z-score), `log_fc` (estimated DE loge-fold-change), and `p_val` (p-value). We will focus on cell type 10. Furthermore, we will examine the original Lsamp gene, which was detected to be significantly differentially expressed in cell type 10. CSIDE model fits for all genes are stored in `myRCTD@de_results$gene_fits`, and we demonstrate below how to access the point estimates, standard errors, and convergence.
+After running CSIDE, it is time to examine CSIDE results. For each cell type, a results dataframe for significant genes is stored in `myRCTD@de_results$sig_gene_list`. In particular, notice the columns `Z_score` (Z-score), `log_fc` (estimated DE loge-fold-change), and `p_val` (p-value). We also have the mean and standard errors of loge expression in each of the two regions (`mean_0`, `mean_1`, `sd_0`, and `sd_1`). We will focus on cell type 10. Furthermore, we will examine the original Lsamp gene, which was detected to be significantly differentially expressed in cell type 10. CSIDE model fits for all genes are stored in `myRCTD@de_results$gene_fits`, and we demonstrate below how to access the point estimates, standard errors, and convergence.
 
 ```{r CSIDE_results,  fig.width = 8, fig.height=8}
 #print results for cell type '18'

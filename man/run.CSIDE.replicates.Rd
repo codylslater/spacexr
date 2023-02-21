@@ -6,32 +6,42 @@
 \usage{
 run.CSIDE.replicates(
   RCTD.replicates,
-  explanatory.variable.replicates,
   cell_types,
+  explanatory.variable.replicates = NULL,
+  X.replicates = NULL,
   cell_type_threshold = 125,
   gene_threshold = 5e-05,
   doublet_mode = T,
   weight_threshold = NULL,
   sigma_gene = T,
-  PRECISION.THRESHOLD = 0.01,
+  PRECISION.THRESHOLD = 0.05,
   cell_types_present = NULL,
   fdr = 0.01,
-  population_de = T,
+  population_de = F,
   replicate_index = NULL,
   normalize_expr = F,
+  test_genes_sig_individual = F,
   de_mode = "single",
   df = 15,
-  barcodes = NULL
+  barcodes = NULL,
+  log_fc_thresh = 0.4,
+  test_error = F,
+  params_to_test = NULL,
+  test_mode = "individual"
 )
 }
 \arguments{
 \item{RCTD.replicates}{an \code{\linkS4class{RCTD.replicates}} object with annotated cell types e.g. from the \code{\link{run.RCTD.replicates}} function.}
 
-\item{explanatory.variable.replicates}{a list of the named numeric vectors representing for each replicate the explanatory variable used for explaining differential expression in CSIDE.
-Names of the vectors are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.}
-
 \item{cell_types}{the cell types used for CSIDE. Each cell type must occur
 at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}}
+
+\item{explanatory.variable.replicates}{(only used for de_mode = single) a list of the named numeric vectors representing for each replicate the explanatory variable used for explaining differential expression in CSIDE.
+Names of the vectors are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.}
+
+\item{X.replicates}{(only used for de_mode = general) a list for each replicate of matrices containing the covariates for running CSIDE. The rownames represent pixel names and
+should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
+explaining differential expression and need to be linearly independent.}
 
 \item{cell_type_threshold}{(default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}}
 
@@ -44,24 +54,35 @@ in \code{cell_types} per pixel to be included in the model. Default 0.99 for dou
 
 \item{sigma_gene}{(default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.}
 
-\item{PRECISION.THRESHOLD}{(default 0.01) for checking for convergence, the maximum parameter change per algorithm step}
+\item{PRECISION.THRESHOLD}{(default 0.05) for checking for convergence, the maximum parameter change per algorithm step}
 
 \item{cell_types_present}{cell types (a superset of `cell_types`) to be considered as occuring often enough
 to consider for gene expression contamination during the step filtering out marker genes of other cell types.}
 
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
 
-\item{population_de}{whether population-level DE should be run (can also be run later using the \code{\link{CSIDE.population.inference}} function.)}
+\item{population_de}{(default FALSE) whether population-level DE should be run (can also be run later using the \code{\link{CSIDE.population.inference}} function.)}
 
 \item{replicate_index}{(default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for CSIDE}
 
 \item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.}
 
-\item{de_mode}{(default 'single') if 'single', calls \code{\link{run.CSIDE.single}}. If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}}
+\item{test_genes_sig_individual}{(default FALSE) logical controlling whether on individual samples genes will be tested for significance.}
+
+\item{de_mode}{(default 'single', otherwise 'nonparam' or 'general') if 'single', calls \code{\link{run.CSIDE.single}}.
+If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}. If 'general', calls \code{\link{run.CSIDE}}.}
 
 \item{df}{(default 15) for de_mode = nonparam, the degrees of freedom, or number of basis functions to be used in the model.}
 
 \item{barcodes}{for de_mode = nonparam, the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.}
+
+\item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
+
+\item{test_error}{(default FALSE) if TRUE, first tests for error messages before running CSIDE.
+If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
+
+\item{params_to_test:}{(default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
+indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix.}
 }
 \value{
 an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE algorithm. See \code{\linkS4class{RCTD.replicates}}
@@ -71,5 +92,5 @@ for documentation on the \code{population_de_results}, \code{population_sig_gene
 Identifies cell type specific differential expression (DE) as a function of the explanatory variable
 for each replicate. The design matrix contains an intercept column and a column of the explanatory variable. Uses maximum
 likelihood estimation to estimate DE and standard errors for each gene and each cell type. Selects
-genes with significant nonzero DE.
+genes with significant nonzero DE. Note: a minimum of three replicates are required for population mode.
 }

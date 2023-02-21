@@ -38,7 +38,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Generalized Linear Admixture Models for Differential Expression, or CSIDE, is part of the spacexr R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use CSIDE to test for cell-to-cell interactions in a toy cerebellum Slide-seq dataset. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression as a function of colocalization with a particular cell type.
+Cell type-Specific Inference of Differential Expression, or CSIDE, is part of the spacexr R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use CSIDE to test for cell-to-cell interactions in a toy cerebellum Slide-seq dataset. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression as a function of colocalization with a particular cell type.
 
 ## Data Preprocessing and running RCTD
 
@@ -99,7 +99,7 @@ plot_puck_continuous(myRCTD@spatialRNA, names(explanatory.variable), explanatory
 
 ## Running CSIDE
 
-After creating the explanatory variable, we are now ready to run CSIDE using the `run.CSIDE.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+After creating the explanatory variable, we are now ready to run CSIDE using the `run.CSIDE.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 3.
 
 **Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the CSIDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), and `fdr` (default 0.01). Please see `?run.CSIDE.single` for more information on these parameters. 
 
@@ -107,7 +107,7 @@ After creating the explanatory variable, we are now ready to run CSIDE using the
 #de
 myRCTD@config$max_cores <- 2
 myRCTD <- run.CSIDE.single(myRCTD, explanatory.variable, gene_threshold = .01, 
-                         cell_type_threshold = 10, fdr = 0.25) 
+                         cell_type_threshold = 3, fdr = 0.25) 
 
 saveRDS(myRCTD,file.path(savedir,'myRCTDde_celltocell.rds'))
 ```
@@ -119,9 +119,9 @@ constructs the design matrix for a single explanatory variable. After constuctin
 X <- build.designmatrix.single(myRCTD, explanatory.variable)
 print(head(X))
 barcodes <- names(explanatory.variable)
-cell_types <- c('10', '18')
+cell_types <- c('10', '18', '6')
 myRCTD_identical <- run.CSIDE(myRCTD, X, barcodes, cell_types, gene_threshold = .01, 
-                        cell_type_threshold = 10, fdr = 0.25)
+                        cell_type_threshold = 3, fdr = 0.25)
 ```
 
 ## CSIDE results

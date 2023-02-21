@@ -1,6 +1,16 @@
-filter_genes <- function(puck, threshold = 5e-5) {
-  norm_counts <- sweep(puck@counts,2,puck@nUMI,'/')
-  gene_list_tot <- names(which(rowMeans(norm_counts) > threshold))
+filter_genes <- function(puck, threshold = 5e-5, batch_size = 1000) {
+  message(c('filter_genes: filtering genes based on threshold = ', threshold))
+  gene_means <- numeric(length(rownames(puck@counts))); names(gene_means) <- rownames(puck@counts)
+  n_batches <- ceiling(length(gene_means) / batch_size)
+  for(j in 1:n_batches) {
+    if(j < n_batches)
+      index_range <- (1:batch_size) + (j-1)*batch_size
+    else
+      index_range <- (1 + (n_batches-1)*batch_size):length(gene_means)
+    norm_counts <- sweep(as.matrix(puck@counts[index_range,]),2,puck@nUMI,'/')
+    gene_means[index_range] <- rowMeans(norm_counts)
+  }
+  gene_list_tot <- names(which(gene_means > threshold))
   if(length(grep("mt-",gene_list_tot)) > 0)
     gene_list_tot <- gene_list_tot[-grep("mt-",gene_list_tot)]
   return(gene_list_tot)
@@ -20,6 +30,18 @@ get_beta_doublet <- function(barcodes, cell_type_names, results_df, weights_doub
     }
   }
   return(my_beta)
+}
+
+get_beta_multi <- function(barcodes, cell_type_names, results, coords) {
+  if(length(results) != dim(coords)[1])
+    stop('CSIDE get_beta_multi: results and spatialRNA@coords must be the same length to run CSIDE in multi-mode.')
+  my_beta <- matrix(0, nrow = length(results), ncol = length(cell_type_names))
+  rownames(my_beta) <- rownames(coords)
+  colnames(my_beta) <- cell_type_names
+  for(i in 1:length(results)) {
+    my_beta[i, results[[i]]$cell_type_list] <- results[[i]]$sub_weights
+  }
+  return(my_beta[barcodes,])
 }
 
 #' Converts RCTD doublet mode results to a weight matrix (across all cell types)
@@ -47,8 +69,8 @@ set_cell_types_assigned <- function(myRCTD) {
 }
 
 filter_barcodes_cell_types <- function(barcodes, cell_types, my_beta, thresh = 0.9999) {
-  barcodes <- barcodes[(rowSums(my_beta[barcodes, cell_types]) >= thresh)]
-  my_beta <- my_beta[barcodes,cell_types]
+  barcodes <- barcodes[(rowSums(my_beta[barcodes, cell_types, drop = FALSE]) >= thresh)]
+  my_beta <- my_beta[barcodes,cell_types, drop = FALSE]
   return (list(barcodes = barcodes, my_beta = my_beta))
 }
 
@@ -76,20 +98,22 @@ get_l_chi <- function(x2, d, S_inv, points_list, delta = 0 ) {
 get_gene_list_type <- function(my_beta, barcodes, cell_type, nUMI, gene_list_type, cti_renorm,
                                cell_types_present, gene_fits, test_mode = 'individual') {
   C = 15
-  N_cells <- colSums(my_beta[barcodes,])[cell_type]
-  UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .99))]
+  N_cells <- colSums(my_beta[barcodes,, drop = FALSE])[cell_type]
+  UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type, drop=FALSE] >= .99))]
   if(length(UMI_list) < 10)
-    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .80))]
+    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type, drop=FALSE] >= .80))]
   if(length(UMI_list) < 10)
-    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .5))]
+    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type, drop=FALSE] >= .5))]
   if(length(UMI_list) < 10)
-    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .01))]
+    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type, drop=FALSE] >= .01))]
   UMI_m <- median(UMI_list)
   expr_thresh <-  C / (N_cells * UMI_m)
   gene_list_type <- setdiff(gene_list_type,gene_list_type[which(cti_renorm[gene_list_type,cell_type] < expr_thresh)])
   cell_type_means <- cti_renorm[gene_list_type,cell_types_present]
-  cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
-  gene_list_type <- gene_list_type[which(cell_prop[gene_list_type,cell_type] > 0.5)]
+  if(dim(my_beta)[2] > 1) {
+    cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
+    gene_list_type <- gene_list_type[which(cell_prop[gene_list_type,cell_type] > 0.5)]
+  }
   if(test_mode == 'categorical') {
     n_cell_types <- dim(my_beta)[2]
     n_regions <- dim(gene_fits$con_all)[2] / n_cell_types
@@ -127,8 +151,13 @@ get_gene_list_type_wrapper <- function(myRCTD, cell_type, cell_types_present) {
 #' @export
 aggregate_cell_types <- function(myRCTD, barcodes, doublet_mode = T) {
   if(doublet_mode) {
+    if(doublet_mode && myRCTD@config$RCTDmode != 'doublet')
+      stop('aggregate_cell_types: attempted to run in doublet mode, but RCTD was not run in doublet mode. Please run in full mode (doublet_mode = F) or first run RCTD in doublet mode.')
     return(table(myRCTD@results$results_df[barcodes,]$first_type[myRCTD@results$results_df[barcodes,]$spot_class %in% c('singlet','doublet_certain')]) +
              +     table(myRCTD@results$results_df[barcodes,]$second_type[myRCTD@results$results_df[barcodes,]$spot_class %in% c('doublet_certain')]))
+  } else if(myRCTD@config$doublet_mode == 'multi') {
+    weights <- get_beta_multi(barcodes, myRCTD@cell_type_info$info[[2]], myRCTD@results, myRCTD@spatialRNA@coords)
+    return(colSums(weights))
   } else {
     return(colSums(myRCTD@results$weights[barcodes,]))
   }
@@ -186,7 +215,8 @@ get_cell_type_ind <- function(X1,X2, n_cell_types) {
   return(cnames)
 }
 
-choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshold, cell_types) {
+choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshold, cell_types,
+                              my_beta, thresh, cell_type_filter) {
   cell_type_count <- aggregate_cell_types(myRCTD, barcodes, doublet_mode = doublet_mode)
   cell_types_default <- names(which(cell_type_count >= cell_type_threshold))
   passed_cell_types = !is.null(cell_types)
@@ -205,6 +235,13 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
   } else {
     cell_types <- cell_types_default
   }
+  if(!is.null(cell_type_filter)) {
+    ct_remove <- setdiff(cell_types, names(which(cell_type_filter)))
+    if(length(ct_remove) > 0)
+      message(paste0('Warning: run.CSIDE.general: removing the following cell types due to insufficient counts per region. Consider lowering cell_type_threshold or proceeding with removed cell types. Cell types: ',
+                     paste(paste0(ct_remove, ', ', collapse = ""))))
+    cell_types <- intersect(cell_types, names(which(cell_type_filter)))
+  }
   if(length(cell_types) == 0) {
     if(passed_cell_types)
       stop('choose_cell_types: length(cell_types) is 0. Please pass in at least one cell type in the list cell_types')
@@ -212,20 +249,46 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
       stop(paste0('choose_cell_types: length(cell_types) is 0. According to the aggregate_cell_types fn, no cell types occured greater than cell_type_threshold of ',
                   cell_type_threshold, '. Please check that all data is present and consider reducing cell_type_threshold.'))
   }
-  if(length(cell_types) == 1) {
-    stop('choose_cell_types: length(cell_types) is 1. This is currently not supported. Please consider adding another cell type or contact the developers to have us add in this capability.')
+  while(TRUE) {
+    if(length(cell_types) == 0) {
+      if(passed_cell_types)
+        stop('choose_cell_types: length(cell_types) is 0. Please pass in at least one cell type in the list cell_types')
+      else
+        stop(paste0('choose_cell_types: length(cell_types) is 0. According to the aggregate_cell_types fn, no cell types occured greater than cell_type_threshold of ',
+                    cell_type_threshold, '. Please check that all data is present and consider reducing cell_type_threshold.'))
+    }
+    res <- filter_barcodes_cell_types(barcodes, cell_types, my_beta[barcodes,], thresh = thresh)
+    cell_types_remain <- names(which(colSums(res$my_beta) >= cell_type_threshold))
+    diff_types <- setdiff(cell_types, cell_types_remain)
+    if(length(diff_types) == 0)
+      break
+    if(passed_cell_types)
+      stop(paste0('choose_cell_types: cannot include cell types: ', diff_types,
+                     ' because these cell types did not contain sufficient pixels passing total cell type weight of weight_threshold = ', thresh,
+                     '. Consider removing this cell type or lowering weight_threshold'))
+    else
+      warning(paste0('choose_cell_types: removing cell types: ', diff_types,
+                     ' because these cell types did not contain sufficient pixels passing total cell type weight of weight_threshold = ', thresh,
+                     '. Consider removing this cell type or lowering weight_threshold'))
+    cell_types <- cell_types_remain
   }
   return(cell_types)
 }
 
-fdr_sig_genes <- function(gene_list_type, p_val, fdr) {
-  N_genes_type <- length(gene_list_type)
-  thresh <- (1:N_genes_type)/N_genes_type * fdr
-  if(any(p_val[order(p_val)] < thresh)) {
-    N_sig <- max(which(p_val[order(p_val)] < thresh))
-    gene_list_sig <- gene_list_type[order(p_val)[1:N_sig]]
+# method = 'BH' or 'locfdr'
+fdr_sig_genes <- function(gene_list_type, p_val, fdr, Z = NULL, method = 'BH') {
+  if(method == 'BH') {
+    N_genes_type <- length(gene_list_type)
+    thresh <- (1:N_genes_type)/N_genes_type * fdr
+    if(any(p_val[order(p_val)] < thresh)) {
+      N_sig <- max(which(p_val[order(p_val)] < thresh))
+      gene_list_sig <- gene_list_type[order(p_val)[1:N_sig]]
+    } else {
+      gene_list_sig <- c()
+    }
   } else {
-    gene_list_sig <- c()
+    lfdr <- locfdr(Z, nulltype = 1)
+    gene_list_sig <- (gene_list_type[lfdr$fdr < fdr])
   }
   return(gene_list_sig)
 }

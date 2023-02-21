@@ -8,14 +8,14 @@ run.CSIDE(
   myRCTD,
   X,
   barcodes,
-  cell_types,
+  cell_types = NULL,
   gene_threshold = 5e-05,
   cell_type_threshold = 125,
   doublet_mode = T,
   test_mode = "individual",
   weight_threshold = NULL,
   sigma_gene = T,
-  PRECISION.THRESHOLD = 0.01,
+  PRECISION.THRESHOLD = 0.05,
   cell_types_present = NULL,
   test_genes_sig = T,
   fdr = 0.01,
@@ -23,7 +23,10 @@ run.CSIDE(
   params_to_test = NULL,
   normalize_expr = F,
   logs = F,
-  cell_type_filter = NULL
+  log_fc_thresh = 0.4,
+  cell_type_filter = NULL,
+  test_error = F,
+  fdr_method = "BH"
 )
 }
 \arguments{
@@ -52,7 +55,7 @@ in \code{cell_types} per pixel to be included in the model. Default 0.99 for dou
 
 \item{sigma_gene}{(default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.}
 
-\item{PRECISION.THRESHOLD}{(default 0.01) for checking for convergence, the maximum parameter change per algorithm step}
+\item{PRECISION.THRESHOLD}{(default 0.05) for checking for convergence, the maximum parameter change per algorithm step}
 
 \item{cell_types_present}{cell types (a superset of `cell_types`) to be considered as occuring often enough
 to consider for gene expression contamination during the step filtering out marker genes of other cell types.}
@@ -65,6 +68,13 @@ to consider for gene expression contamination during the step filtering out mark
 Setting normalize_expr = TRUE is only valid for testing single parameters with test_mode = 'individual'.}
 
 \item{logs}{(default FALSE) if TRUE, writes progress to logs/de_logs.txt}
+
+\item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
+
+\item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
+
+\item{fdr_method}{(default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.}
 
 \item{cell_type_specific:}{(default TRUE for all covariates). A logical vector of length the number of covariates
 indicating whether each covariate's DE parameters should be cell type-specific or shared across all cell types.}

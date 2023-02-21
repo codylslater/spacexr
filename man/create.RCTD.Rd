@@ -15,15 +15,16 @@ create.RCTD(
   fc_cutoff_reg = 0.75,
   UMI_min = 100,
   UMI_max = 2e+07,
+  counts_MIN = 10,
   UMI_min_sigma = 300,
   class_df = NULL,
   CELL_MIN_INSTANCE = 25,
   cell_type_names = NULL,
   MAX_MULTI_TYPES = 4,
   keep_reference = F,
-  cell_type_info = NULL,
-  CONFIDENCE_THRESHOLD = 10,
-  DOUBLET_THRESHOLD = 25
+  cell_type_profiles = NULL,
+  CONFIDENCE_THRESHOLD = 5,
+  DOUBLET_THRESHOLD = 20
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ number of available cores.}
 
 \item{UMI_max}{maximum UMI per pixel included in the analysis}
 
+\item{counts_MIN}{(default 10) minimum total counts per pixel of genes used in the analysis.}
+
 \item{UMI_min_sigma}{minimum UMI per pixel for the \link{choose_sigma_c} function}
 
 \item{class_df}{(optional) if not NULL, then a dataframe mapping each cell type to a cell class, so that RCTD will report confidence on the class level.}
@@ -58,11 +61,12 @@ number of available cores.}
 
 \item{keep_reference}{(Default FALSE) if true, keeps the \code{reference} object stored within the \code{\linkS4class{RCTD}} object}
 
-\item{cell_type_info}{Default NULL, option to pass in \code{cell_type_info} directly}
+\item{cell_type_profiles}{Default NULL, option to pass in cell type profiles in directly as a genes by cell type matrix, including gene names and cell type names.
+If this option is used, reference will be ignored.}
 
-\item{CONFIDENCE_THRESHOLD}{(Default 10) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence}
+\item{CONFIDENCE_THRESHOLD}{(Default 5) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence}
 
-\item{DOUBLET_THRESHOLD}{(Default 25) the penalty weight of predicting a doublet instead of a singlet for a pixel}
+\item{DOUBLET_THRESHOLD}{(Default 20) the penalty weight of predicting a doublet instead of a singlet for a pixel}
 }
 \value{
 an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function
